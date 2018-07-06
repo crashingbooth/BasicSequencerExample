@@ -43,6 +43,4 @@ struct BarTemplate {
                   duration: dur)
         return startBeat + numBeats
     }
-    
-   
 }

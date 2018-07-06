@@ -18,31 +18,24 @@ enum CustomMIDIEvent: MIDINoteNumber {
 }
 
 class CustomSequencer {
-    var akSeq: AKSequencer!
-    var outputCallback: AKCallbackInstrument!
-    var outputTrack: AKMusicTrack!
-    
-    var snare: AKSynthSnare!
-    var kick: AKSynthKick!
-    var mixer: AKMixer!
+    private var akSeq: AKSequencer!
+    private var outputCallback: AKCallbackInstrument!
+    private var outputTrack: AKMusicTrack!
     
     weak var uiManipulator: UIManipulatorDelegate?
+    var soundGenerator: SoundGenerator
     var template: BarTemplate!
     var nextStart: Int = 0
 
     
-    fileprivate func getStarted() {
-        setUp()
-        setUpSounds()
+    init(soundGenerator: SoundGenerator) {
+        self.soundGenerator = soundGenerator
+        self.akSeq = AKSequencer()
+        setUpTracks()
         writeInitialTrack()
     }
     
-    init() {
-        akSeq = AKSequencer()
-        getStarted()
-    }
-    
-    fileprivate func setUp() {
+    fileprivate func setUpTracks() {
         outputTrack = akSeq.newTrack()!
         outputCallback = AKCallbackInstrument()
         outputTrack.setMIDIOutput(outputCallback.midiIn)
@@ -51,15 +44,7 @@ class CustomSequencer {
         akSeq.setLength(AKDuration(beats: 10000))
         akSeq.rewind()
     }
-    
-    fileprivate func setUpSounds() {
-        snare = AKSynthSnare()
-        kick = AKSynthKick()
-        mixer = AKMixer(snare, kick)
-        AudioKit.output = mixer
-        
-        try? AudioKit.start()
-    }
+
     
     fileprivate func writeInitialTrack() {
         template = BarTemplate(numBeats: 4, accent: 2)
@@ -69,28 +54,38 @@ class CustomSequencer {
     func myCallback(_ status: AKMIDIStatus, _ note: MIDINoteNumber, _ vel: MIDIVelocity ) {
         guard status == .noteOn,
             let event = CustomMIDIEvent(rawValue: note) else { return }
-        print(akSeq.currentPosition, event)
+        print(akSeq.currentPosition.beats, event)
         switch event {
         case .beatType1:
-            uiManipulator?.flashBlue()
-            snare.play(noteNumber: 60, velocity: 100)
+            snareEvent()
         case .beatType2:
-            uiManipulator?.flashBlue()
-            kick.play(noteNumber: 60, velocity: 100)
+            kickEvent()
         case .beatType3:
-            uiManipulator?.flashBlue()
-            uiManipulator?.flashGreen()
-            snare.play(noteNumber: 60, velocity: 100)
-            kick.play(noteNumber: 60, velocity: 100)
+            snareEvent()
+            kickEvent()
         case .checkForRewrite:
             nextStart = template.writeBar(track: outputTrack, startBeat: nextStart)
         }
     }
+    
+    // MARK: - Events
+    fileprivate func snareEvent() {
+        uiManipulator?.flashBlue()
+        soundGenerator.playSnare()
+    }
+    
+    fileprivate func kickEvent() {
+        uiManipulator?.flashGreen()
+        soundGenerator.playKick()
+    }
+    
+    // MARK: - Public Facing
+    func play() {
+        akSeq.play()
+    }
+    
+    func stop() {
+        akSeq.stop()
+    }
 }
 
-
-
-protocol UIManipulatorDelegate: class {
-    func flashGreen()
-    func flashBlue()
-}

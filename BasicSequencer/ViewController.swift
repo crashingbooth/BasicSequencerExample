@@ -10,33 +10,33 @@ import UIKit
 import AudioKit
 
 class ViewController: UIViewController {
-    var seq = CustomSequencer()
+    var soundGenerator = SoundGenerator()
+    var seq: CustomSequencer!
     
     @IBOutlet weak var flasher1: UIView!
     @IBOutlet weak var flasher2: UIView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        seq = CustomSequencer(soundGenerator: soundGenerator)
         seq.uiManipulator = self
-    
     }
-
+    
     @IBAction func paly(_ sender: Any) {
-        seq.akSeq.play()
+        seq.play()
     }
     
     @IBAction func stop(_ sender: Any) {
-        seq.akSeq.stop()
+        seq.stop()
     }
     
     @IBAction func bartype1(_ sender: Any) {
-       seq.akSeq.stop()
-        seq.akSeq.setTime(10.0)
+        seq.template = BarTemplate(numBeats: 2, accent: 7)
         
     }
     
     @IBAction func bartype2(_ sender: Any) {
-         seq.template = BarTemplate(numBeats: 5, accent: 3)
+        seq.template = BarTemplate(numBeats: 5, accent: 3)
     }
 }
 
@@ -46,7 +46,7 @@ extension ViewController: UIManipulatorDelegate {
             self.flasher1.backgroundColor = .green
             _ = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: false) { _ in
                 self.flasher1.backgroundColor = .white
-
+                
             }
         }
     }
@@ -59,8 +59,10 @@ extension ViewController: UIManipulatorDelegate {
             }
         }
     }
+}
 
-    
-    
+protocol UIManipulatorDelegate: class {
+    func flashGreen()
+    func flashBlue()
 }
 
